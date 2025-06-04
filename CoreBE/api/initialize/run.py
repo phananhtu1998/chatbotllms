@@ -7,22 +7,45 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHea
 import os
 from .logging import setup_logging, RequestLoggingMiddleware
 from colorama import Fore, Style, init
+from typing import Union
 
 init(autoreset=True)
 
 from .redis import RedisInitializer
 from .router import RouterInitializer
 from api.middleware.ratelimit.middleware import RateLimitMiddleware
+from api.security.auth import get_api_key_or_bearer
 
 # Define security schemes
 security = HTTPBearer()
 api_key_security = APIKeyHeader(name="X-API-Key")
 
+async def get_bearer_token(bearer_token: HTTPAuthorizationCredentials = Depends(security)):
+    """Dependency for Bearer token authentication"""
+    if bearer_token:
+        # In a real application, you would validate the token here
+        return bearer_token
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+async def get_api_key(api_key: str = Depends(api_key_security)):
+    """Dependency for API Key authentication"""
+    if api_key:
+        # In a real application, you would validate the API key here
+        return api_key
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "X-API-Key"},
+    )
+
 async def get_api_key_or_bearer(bearer_token: HTTPAuthorizationCredentials = Depends(security), api_key: str = Depends(api_key_security)):
     """Dependency to allow authentication with either API Key or Bearer Token"""
     if bearer_token or api_key:
         # In a real application, you would validate the token/key here
-        # For now, we just check if either is present
         return bearer_token or api_key
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -127,8 +150,8 @@ class ApplicationRunner:
         router_init = RouterInitializer()
         main_router = router_init.initialize()
         
-        # Include main router
-        self.app.include_router(main_router, prefix="/api/v1", dependencies=[Depends(get_api_key_or_bearer)])
+        # Include main router without global authentication
+        self.app.include_router(main_router, prefix="/api/v1")
         
         # Add health check endpoint
         @self.app.get("/health")
