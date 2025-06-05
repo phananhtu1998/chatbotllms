@@ -147,8 +147,8 @@ class ApplicationRunner:
         # Add rate limit middleware
         self.app.add_middleware(
             RateLimitMiddleware,
-            calls=3,  # Số request tối đa trong một khoảng thời gian
-            period=60   # Khoảng thời gian tính bằng giây (60 giây = 1 phút)
+            calls=1000,  # Số request tối đa trong một khoảng thời gian
+            period=1   # Khoảng thời gian tính bằng giây (60 giây = 1 phút)
         )
         
         # Add request logging middleware
