@@ -18,3 +18,15 @@ pip install -r requirement.txt
 ```
 python -m api.main
 ```
+
+**Lệnh tạo file schema để định nghĩa csdl**
+
+```
+python api/migrations/cli.py create create_users_table
+```
+
+**Chạy lệnh để tạo bảng**
+
+```
+python api/migrations/cli.py migrate
+```

@@ -12,6 +12,7 @@ from typing import Union
 init(autoreset=True)
 
 from .redis import RedisInitializer
+from .postgres import PostgresInitializer
 from .router import RouterInitializer
 from api.middleware.ratelimit.middleware import RateLimitMiddleware
 from api.security.auth import get_api_key_or_bearer
@@ -84,6 +85,7 @@ class ApplicationRunner:
         self.app = None
         self.redis_client = None
         self.minio_client = None
+        self.postgres_pool = None
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
         """Application lifespan manager"""
@@ -108,11 +110,17 @@ class ApplicationRunner:
         # Initialize Redis
         redis_init = RedisInitializer()
         self.redis_client = await redis_init.initialize()
+        
+        # Initialize PostgreSQL
+        postgres_init = PostgresInitializer()
+        self.postgres_pool = await postgres_init.initialize()
     async def _cleanup_services(self):
         """Cleanup all services"""
         try:
             if self.redis_client:
                 await self.redis_client.close()
+            if self.postgres_pool:
+                await self.postgres_pool.close()
                 
         except Exception as e:
             logger.error(f"Error during cleanup: {str(e)}")
