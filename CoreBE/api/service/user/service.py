@@ -14,6 +14,11 @@ class UserService:
         full_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Create a new user"""
+        # Check if user with email already exists
+        existing_user = await self.get_user_by_email(email)
+        if existing_user:
+            raise ValueError("User with this email already exists") # Raise a ValueError or a custom exception
+            
         return await create_user(
             self.pool,
             username,

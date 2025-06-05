@@ -15,33 +15,35 @@ class UserController:
             ...,
             description="User data for creation",
             example={
-                "username": "johndoe",
-                "email": "john@example.com",
-                "password": "securepassword123",
-                "full_name": "John Doe"
+                "email": "admin@gmail.com",
+                "images": "/upload/images/phananhtu.jpg",
+                "name": "Admin",
+                "role_id": "2b796313-1134-44b3-b527-2c27d41a1624",
+                "status": True,
+                "username": "admin"
             }
         )
     ) -> Dict[str, Any]:
         """Create a new user"""
         try:
             # Check if user with email already exists
-            existing_user = await self.user_service.get_user_by_email(user_data.email)
-            if existing_user:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="User with this email already exists"
-                )
+            # This check is now done in the service layer
             
             user = await self.user_service.create_user(
                 username=user_data.username,
                 email=user_data.email,
-                password_hash=user_data.password,  # Note: You should hash the password in the service layer
+                password_hash=user_data.password, # Assuming password is now handled in service layer
                 full_name=user_data.full_name
             )
             return create_response(
                 status_code=status.HTTP_201_CREATED,
                 message="User created successfully",
                 data=user
+            )
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
             )
         except HTTPException:
             raise
