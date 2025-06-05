@@ -4,9 +4,9 @@ import uuid
 
 class UserCreateRequest(BaseModel):
     email: EmailStr = Field(..., description="Email address of the user")
-    images: Optional[str] = Field(None, description="Path to user image") # Assuming images is a string path
+    images: Optional[str] = Field(None, description="Path to user image") 
     name: str = Field(..., description="Name of the user")
-    role_id: uuid.UUID = Field(..., description="Role ID of the user") # Assuming role_id is a UUID
+    role_id: uuid.UUID = Field(..., description="Role ID of the user")
     status: bool = Field(..., description="Status of the user")
     username: str = Field(..., min_length=3, max_length=50, description="Username of the user")
 
