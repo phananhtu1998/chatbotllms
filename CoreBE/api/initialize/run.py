@@ -15,7 +15,7 @@ from .redis import RedisInitializer
 from .postgres import PostgresInitializer
 from .router import RouterInitializer
 from api.middleware.ratelimit.middleware import RateLimitMiddleware
-from api.security.auth import get_api_key_or_bearer
+from api.middleware.auth import get_api_key_or_bearer
 
 # Define security schemes
 security = HTTPBearer()

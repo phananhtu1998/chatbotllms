@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
-from ..security.auth import get_api_key_or_bearer
-from ..controller.user.controller import UserController
-from ..service.user.service import UserService
-from ..initialize.postgres import PostgresInitializer
+from api.middleware.auth import get_api_key_or_bearer
+from api.controller.user.controller import UserController
+from api.service.user.service import UserService
+from api.initialize.postgres import PostgresInitializer
 
 # Create router
 user_router = APIRouter()

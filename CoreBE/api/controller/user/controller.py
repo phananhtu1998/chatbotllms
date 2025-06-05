@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
 from typing import Optional, List, Dict, Any
-from ...service.user.service import UserService
-from ...security.auth import get_api_key_or_bearer
-from ...utils.response import create_response, create_paginated_response
+from api.service.user.service import UserService
+from api.middleware.auth import get_api_key_or_bearer
+from api.utils.response import create_response, create_paginated_response
 
 class UserController:
     def __init__(self, user_service: UserService):
