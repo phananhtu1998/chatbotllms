@@ -4,3 +4,4 @@ redis
 minio
 python-dotenv
 asyncpg
+pydantic[email]

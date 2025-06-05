@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
 from api.middleware.auth import get_api_key_or_bearer
 from api.controller.user.controller import UserController
 from api.service.user.service import UserService
 from api.initialize.postgres import PostgresInitializer
+from api.models.user_model import UserCreateRequest
 
 # Create router
 user_router = APIRouter()
@@ -18,19 +19,13 @@ async def get_user_controller():
 
 @user_router.post("", status_code=status.HTTP_201_CREATED)
 async def create_user(
-    username: str,
-    email: str,
-    password_hash: str,
-    full_name: Optional[str] = None,
+    user_data: UserCreateRequest = Body(..., description="Data for creating a new user"),
     user_controller: UserController = Depends(get_user_controller),
     auth: HTTPAuthorizationCredentials = Depends(get_api_key_or_bearer)
 ) -> Dict[str, Any]:
     """Create a new user"""
     return await user_controller.create_user(
-        username=username,
-        email=email,
-        password_hash=password_hash,
-        full_name=full_name
+        user_data=user_data
     )
 
 @user_router.get("/{user_id}")

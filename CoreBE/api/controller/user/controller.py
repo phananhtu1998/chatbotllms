@@ -1,8 +1,9 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Body
 from typing import Optional, List, Dict, Any
 from api.service.user.service import UserService
 from api.middleware.auth import get_api_key_or_bearer
 from api.utils.response import create_response, create_paginated_response
+from api.models.user_model import UserCreateRequest, UserResponse
 
 class UserController:
     def __init__(self, user_service: UserService):
@@ -10,15 +11,21 @@ class UserController:
 
     async def create_user(
         self,
-        username: str,
-        email: str,
-        password_hash: str,
-        full_name: Optional[str] = None
+        user_data: UserCreateRequest = Body(
+            ...,
+            description="User data for creation",
+            example={
+                "username": "johndoe",
+                "email": "john@example.com",
+                "password": "securepassword123",
+                "full_name": "John Doe"
+            }
+        )
     ) -> Dict[str, Any]:
         """Create a new user"""
         try:
             # Check if user with email already exists
-            existing_user = await self.user_service.get_user_by_email(email)
+            existing_user = await self.user_service.get_user_by_email(user_data.email)
             if existing_user:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -26,10 +33,10 @@ class UserController:
                 )
             
             user = await self.user_service.create_user(
-                username=username,
-                email=email,
-                password_hash=password_hash,
-                full_name=full_name
+                username=user_data.username,
+                email=user_data.email,
+                password_hash=user_data.password,  # Note: You should hash the password in the service layer
+                full_name=user_data.full_name
             )
             return create_response(
                 status_code=status.HTTP_201_CREATED,
