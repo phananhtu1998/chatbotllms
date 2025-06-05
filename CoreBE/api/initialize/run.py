@@ -8,6 +8,7 @@ import os
 from .logging import setup_logging, RequestLoggingMiddleware
 from colorama import Fore, Style, init
 from typing import Union
+from api.middleware.cors.cors import configure_cors
 
 init(autoreset=True)
 
@@ -143,6 +144,9 @@ class ApplicationRunner:
             "filter": True,
             "tryItOutEnabled": True
         }
+        
+        # Configure CORS
+        configure_cors(self.app)
         
         # Add rate limit middleware
         self.app.add_middleware(
