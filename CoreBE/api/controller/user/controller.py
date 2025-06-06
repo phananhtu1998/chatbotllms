@@ -26,13 +26,10 @@ class UserController:
     ) -> Dict[str, Any]:
         """Create a new user"""
         try:
-            # Check if user with email already exists
-            # This check is now done in the service layer
-            
             user = await self.user_service.create_user(
                 username=user_data.username,
                 email=user_data.email,
-                password_hash=user_data.password, # Assuming password is now handled in service layer
+                password_hash=user_data.password,
                 full_name=user_data.full_name
             )
             return create_response(
