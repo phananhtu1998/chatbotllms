@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
-from api.middleware.auth import get_api_key_or_bearer
+from api.middleware.auth import get_api_key_or_bearer,get_bearer_token
 from api.controller.user.controller import UserController
 from api.service.user.service import UserService
 from api.initialize.postgres import PostgresInitializer
@@ -84,7 +84,7 @@ async def list_users(
     page: int = 1,
     limit: int = 10,
     user_controller: UserController = Depends(get_user_controller),
-    auth: HTTPAuthorizationCredentials = Depends(get_api_key_or_bearer)
+    auth: HTTPAuthorizationCredentials = Depends(get_bearer_token)
 ) -> Dict[str, Any]:
     """List users with pagination"""
     return await user_controller.list_users(page, limit) 

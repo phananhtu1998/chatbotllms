@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, APIKeyHeader
 import os
-from .logging import setup_logging, RequestLoggingMiddleware
+from .logging import RequestLoggingMiddleware
 from colorama import Fore, Style, init
 from typing import Union
 from api.middleware.cors.cors import configure_cors
@@ -16,44 +16,6 @@ from .redis import RedisInitializer
 from .postgres import PostgresInitializer
 from .router import RouterInitializer
 from api.middleware.ratelimit.middleware import RateLimitMiddleware
-from api.middleware.auth import get_api_key_or_bearer
-
-# Define security schemes
-security = HTTPBearer()
-api_key_security = APIKeyHeader(name="X-API-Key")
-
-async def get_bearer_token(bearer_token: HTTPAuthorizationCredentials = Depends(security)):
-    """Dependency for Bearer token authentication"""
-    if bearer_token:
-        # In a real application, you would validate the token here
-        return bearer_token
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-async def get_api_key(api_key: str = Depends(api_key_security)):
-    """Dependency for API Key authentication"""
-    if api_key:
-        # In a real application, you would validate the API key here
-        return api_key
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated",
-        headers={"WWW-Authenticate": "X-API-Key"},
-    )
-
-async def get_api_key_or_bearer(bearer_token: HTTPAuthorizationCredentials = Depends(security), api_key: str = Depends(api_key_security)):
-    """Dependency to allow authentication with either API Key or Bearer Token"""
-    if bearer_token or api_key:
-        # In a real application, you would validate the token/key here
-        return bearer_token or api_key
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Not authenticated",
-        headers={"WWW-Authenticate": "Bearer or X-API-Key"},
-    )
 
 class ColoredFormatter(logging.Formatter):
     """Custom formatter with colors"""
