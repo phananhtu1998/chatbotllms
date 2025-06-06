@@ -5,3 +5,4 @@ minio
 python-dotenv
 asyncpg
 pydantic[email]
+PyJWT
