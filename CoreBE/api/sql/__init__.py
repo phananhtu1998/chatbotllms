@@ -1,8 +1,5 @@
-"""
-SQL package for database operations
-"""
-
 from .user import create_user, get_user_by_id, get_user_by_email, update_user, delete_user, list_users
+from .account import create_account
 
 __all__ = [
     'create_user',
@@ -10,5 +7,6 @@ __all__ = [
     'get_user_by_email',
     'update_user',
     'delete_user',
-    'list_users'
+    'list_users',
+    'create_account'
 ] 
