@@ -21,10 +21,24 @@ async def create_account(
 ) -> Dict[str, Any]:
     """Create a new user in the database"""
     query = """
-    INSERT INTO users (id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at)
+    INSERT INTO account (id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     RETURNING id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
     """
     async with pool.acquire() as conn:
         record = await conn.fetchrow(query, id, number, code, name, email, username, password,salt,status,images,created_at, created_by, is_deleted, updated_at)
+        return dict(record) if record else None
+
+async def get_account_by_email(
+    pool: asyncpg.Pool,
+    email: str
+) -> Optional[Dict[str, Any]]:
+    """Get account by email"""
+    query = """
+    SELECT COUNT(id) as count
+    FROM account
+    WHERE email = $1 AND is_deleted = false
+    """
+    async with pool.acquire() as conn:
+        record = await conn.fetchrow(query, email)
         return dict(record) if record else None
