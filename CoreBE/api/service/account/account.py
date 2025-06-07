@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 import asyncpg
-from ...sql.account import create_account,get_account_by_email
+from ...sql.account import AccountQuery
 from datetime import datetime
 import uuid
 
@@ -24,7 +24,7 @@ class AccountService:
     ) -> Dict[str, Any]:
         """Create a new account"""
         # Check if user with email already exists
-        result = await get_account_by_email(self.pool, email)
+        result = await AccountQuery.get_account_by_email(self.pool, email)
         if result and result.get('count', 0) > 0:
             raise ValueError("Account with this email already exists")
             
@@ -44,7 +44,7 @@ class AccountService:
                 if count > 0:
                     raise ValueError("created_by is required for non-first accounts")
         
-        return await create_account(
+        return await AccountQuery.create_account(
             self.pool,
             id=account_id,
             number=number,
@@ -64,7 +64,7 @@ class AccountService:
 
     async def get_account_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Get account by email"""
-        result = await get_account_by_email(self.pool, email)
+        result = await AccountQuery.get_account_by_email(self.pool, email)
         return result.get('count', 0) if result else 0
 
     
