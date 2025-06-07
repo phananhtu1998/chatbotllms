@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status, Body
 from typing import Optional, List, Dict, Any
-from api.service.account import AccountService
+from api.service.account.account import AccountService
 from api.middleware.auth import get_api_key_or_bearer
 from api.utils.response import create_response, create_paginated_response
 from api.models.account_model import CreateAccount

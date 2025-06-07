@@ -2,8 +2,8 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
-class CreateAccount():
-    number: int =   Field(..., description="Account number")
+class CreateAccount(BaseModel):
+    number: int = Field(..., description="Account number")
     code: str = Field(..., description="Account code")
     name: str = Field(..., description="Account name")
     email: str = Field(..., description="Email address of the user")

@@ -1,6 +1,6 @@
 from typing import Optional, List, Dict, Any
 import asyncpg
-from ...sql.ac import create_account
+from ...sql.account import create_account
 from datetime import datetime
 import uuid
 
