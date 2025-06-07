@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 
 class AccountQuery:
+    @staticmethod
     async def create_account(
         pool: asyncpg.Pool,
         id: str,
@@ -20,7 +21,7 @@ class AccountQuery:
         created_by: str = "",
         is_deleted: bool = False,
     ) -> Dict[str, Any]:
-        """Create a new user in the database"""
+        """Create a new account in the database"""
         query = """
         INSERT INTO account (id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
@@ -30,6 +31,7 @@ class AccountQuery:
             record = await conn.fetchrow(query, id, number, code, name, email, username, password,salt,status,images,created_at, created_by, is_deleted, updated_at)
             return dict(record) if record else None
 
+    @staticmethod
     async def get_account_by_email(
         pool: asyncpg.Pool,
         email: str

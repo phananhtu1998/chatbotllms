@@ -1,12 +1,7 @@
-from .user import create_user, get_user_by_id, get_user_by_email, update_user, delete_user, list_users
+from .user import UserQuery
 from .account import AccountQuery
 
 __all__ = [
-    'create_user',
-    'get_user_by_id',
-    'get_user_by_email',
-    'update_user',
-    'delete_user',
-    'list_users',
+    'UserQuery',
     'AccountQuery',
 ] 

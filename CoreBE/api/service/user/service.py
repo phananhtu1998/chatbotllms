@@ -1,6 +1,6 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import asyncpg
-from ...sql.user import create_user, get_user_by_id, get_user_by_email, update_user, delete_user, list_users
+from ...sql.user import UserQuery
 
 class UserService:
     def __init__(self, pool: asyncpg.Pool):
@@ -17,9 +17,9 @@ class UserService:
         # Check if user with email already exists
         existing_user = await self.get_user_by_email(email)
         if existing_user:
-            raise ValueError("User with this email already exists") # Raise a ValueError or a custom exception
+            raise ValueError("User with this email already exists")
             
-        return await create_user(
+        return await UserQuery.create_user(
             self.pool,
             username,
             email,
@@ -29,11 +29,11 @@ class UserService:
 
     async def get_user_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
         """Get user by ID"""
-        return await get_user_by_id(self.pool, user_id)
+        return await UserQuery.get_user_by_id(self.pool, user_id)
 
     async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
         """Get user by email"""
-        return await get_user_by_email(self.pool, email)
+        return await UserQuery.get_user_by_email(self.pool, email)
 
     async def update_user(
         self,
@@ -41,16 +41,16 @@ class UserService:
         **kwargs
     ) -> Optional[Dict[str, Any]]:
         """Update user information"""
-        return await update_user(self.pool, user_id, **kwargs)
+        return await UserQuery.update_user(self.pool, user_id, **kwargs)
 
     async def delete_user(self, user_id: int) -> bool:
         """Delete a user"""
-        return await delete_user(self.pool, user_id)
+        return await UserQuery.delete_user(self.pool, user_id)
 
     async def list_users(
         self,
-        limit: int = 10,
-        offset: int = 0
-    ) -> List[Dict[str, Any]]:
+        page: int = 1,
+        limit: int = 10
+    ) -> Tuple[List[Dict[str, Any]], int]:
         """List users with pagination"""
-        return await list_users(self.pool, limit, offset) 
+        return await UserQuery.list_users(self.pool, page, limit) 

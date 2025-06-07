@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
 from api.middleware.auth import get_api_key_or_bearer,get_bearer_token
-from api.controller.user.controller import UserController
+from ...controller.user.controller import UserController
 from api.service.user.service import UserService
 from api.initialize.postgres import PostgresInitializer
 from api.models.user_model import UserCreateRequest
