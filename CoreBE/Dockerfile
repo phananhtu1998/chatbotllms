@@ -24,8 +24,8 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     python-jose[cryptography] \
     passlib[bcrypt] \
     aiofiles \
-    jinja2 \
-    email-validator && \
+    jinja2 && \
+
     # Xóa các file bytecode không cần thiết
     find /usr/local/lib/python3.11/site-packages -type d -name "__pycache__" -exec rm -rf {} + && \
     find /usr/local/lib/python3.11/site-packages -type f -name "*.pyc" -delete && \
