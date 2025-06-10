@@ -28,10 +28,7 @@ class KeyTokenQuery:
         query = """
         UPDATE keytoken
         SET refresh_token = $1,
-            refresh_tokens_used = CASE
-                WHEN refresh_tokens_used IS NULL THEN ARRAY[$1]
-                ELSE array_append(refresh_tokens_used, $1)
-            END,
+            refresh_tokens_used = COALESCE(refresh_tokens_used, '[]'::jsonb) || to_jsonb($1::text),
             updated_at = CURRENT_TIMESTAMP
         WHERE account_id = $2
         """
@@ -41,7 +38,7 @@ class KeyTokenQuery:
                 await conn.execute(query, refresh_token, account_id)
                 return True
         except Exception as e:
-            print(f"Error updating refresh token: {str(e)}")
+            print(f"DEBUG: Error updating refresh token: {str(e)}")
             return False
 
     @staticmethod
@@ -62,7 +59,7 @@ class KeyTokenQuery:
             $1,
             $2,
             $3,
-            ARRAY[]::text[],
+            '[]'::jsonb,
             CURRENT_TIMESTAMP,
             CURRENT_TIMESTAMP
         )
@@ -78,6 +75,6 @@ class KeyTokenQuery:
                 )
                 return True
         except Exception as e:
-            print(f"Error inserting key token: {str(e)}")
+            print(f"DEBUG: Error inserting key token: {str(e)}")
             return False
     

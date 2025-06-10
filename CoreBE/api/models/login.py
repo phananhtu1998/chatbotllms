@@ -27,4 +27,3 @@ class LoginOutput(BaseModel):
 	username: str
 	accesstoken: str
 	refresh_token: str = Field(alias="refreshToken")
-	x_api_key: str = Field(alias="x_api_key")

@@ -35,14 +35,24 @@ class AuthService:
                 return 403, None, ErrorForbidden("Account is Locked")
 
             # Generate tokens
-            subtoken = TokenGenerator(item_account["number"])
+            subtoken = TokenGenerator.generate_cli_token_uuid(item_account["number"])
             
             # Get account info
-            info_account, err = await AccountQuery.get_account_by_id(self.pool, item_account["id"])
+            result_tuple = await AccountQuery.get_account_by_id(self.pool, item_account["id"])
+            if result_tuple is None:
+                return 500, None, ErrorInternal("Failed to retrieve account information (unexpected None from DB query)")
+
+            info_account, err = result_tuple
             if err is not None:
                 return 500, None, ErrorInternal("Error getting account information")
 
             try:
+                # Convert UUID and datetime objects to strings for JSON serialization
+                for key, value in info_account.items():
+                    if isinstance(value, uuid.UUID):
+                        info_account[key] = str(value)
+                    elif isinstance(value, datetime):
+                        info_account[key] = value.isoformat()
                 info_account_json = json.dumps(info_account)
             except Exception as e:
                 return 500, None, ErrorInternal(f"Error converting account info to JSON: {str(e)}")
@@ -82,10 +92,10 @@ class AuthService:
                     
             # Prepare output
             output = LoginOutput(
-                id=item_account["id"],
+                id=str(item_account["id"]),
                 username=item_account["username"],
-                accesstoken=access_token,
-                refresh_token=refresh_token,
+                accesstoken=access_token.token,
+                refreshToken=refresh_token,
                 x_api_key=item_account.get("api_key", "")
             )
 

@@ -2,6 +2,7 @@ from typing import Optional, Dict, Any
 
 class AppError(Exception):
     def __init__(self, message: str, code: int = 500, details: Optional[Dict[str, Any]] = None):
+        print("DEBUG: AppError class is being initialized")
         self.message = message
         self.code = code
         self.details = details or {}
@@ -20,8 +21,8 @@ class ErrorNotFound(AppError):
         super().__init__(message=message, code=404)
 
 class ErrorInternal(AppError):
-    def __init__(self, message: str = "Internal server error"):
-        super().__init__(message=message, code=500)
+    def __init__(self, message: str = "Internal server error", details: Optional[Dict[str, Any]] = None):
+        super().__init__(message=message, code=500, details=details)
 
 class ErrorBadRequest(AppError):
     def __init__(self, message: str = "Bad request"):

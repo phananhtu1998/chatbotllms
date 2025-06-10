@@ -9,6 +9,7 @@ from .logging import RequestLoggingMiddleware
 from colorama import Fore, Style, init
 from typing import Union
 from api.middleware.cors.cors import configure_cors
+from api.global_config.global_val import global_instance
 
 init(autoreset=True)
 
@@ -73,6 +74,7 @@ class ApplicationRunner:
         # Initialize Redis
         redis_init = RedisInitializer()
         self.redis_client = await redis_init.initialize()
+        global_instance.redis_client = self.redis_client # Assign to global instance
         
         # Initialize PostgreSQL
         postgres_init = PostgresInitializer()
