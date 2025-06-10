@@ -12,6 +12,7 @@ from api.global_config.global_val import global_instance
 from ...const.const import REFRESH_TOKEN
 from ...models.login import LoginInput, LoginOutput
 from ...errors.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
+import traceback
 
 
 class AuthService:
@@ -93,4 +94,6 @@ class AuthService:
         except Exception as e:
             if isinstance(e, AppError):
                 return e.code, None, e
-            return 500, None, ErrorInternal(str(e))
+            # Capture traceback for more detailed logging
+            detailed_error = traceback.format_exc()
+            return 500, None, ErrorInternal(message=str(e), details={"traceback": detailed_error})

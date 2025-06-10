@@ -30,7 +30,11 @@ class AuthController:
                 elif isinstance(error, ErrorForbidden):
                     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error))
                 else:
-                    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(error))
+                    # For any other AppError, or generic Exception, expose details if available
+                    detail_message = str(error)
+                    if hasattr(error, 'details') and error.details:
+                        detail_message = {"message": str(error), "details": error.details}
+                    raise HTTPException(status_code=error.code if isinstance(error, AppError) else status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail_message)
 
             return create_response(
                 status_code=status.HTTP_200_OK,

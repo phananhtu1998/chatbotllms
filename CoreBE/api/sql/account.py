@@ -53,7 +53,7 @@ class AccountQuery:
     ) -> Optional[Dict[str, Any]]:
         """Get account by username"""
         query = """
-        SELECT id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
+        SELECT id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at
         FROM account
         WHERE username = $1 AND is_deleted = false
         """
