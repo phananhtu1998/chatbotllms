@@ -45,3 +45,42 @@ class AccountQuery:
         async with pool.acquire() as conn:
             record = await conn.fetchrow(query, email)
             return dict(record) if record else None
+
+    @staticmethod
+    async def get_account_by_username(
+        pool: asyncpg.Pool,
+        username: str
+    ) -> Optional[Dict[str, Any]]:
+        """Get account by username"""
+        query = """
+        SELECT id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
+        FROM account
+        WHERE username = $1 AND is_deleted = false
+        """
+        async with pool.acquire() as conn:
+            record = await conn.fetchrow(query, username)
+            return dict(record) if record else None
+
+    @staticmethod
+    async def get_account_by_id(
+        pool: asyncpg.Pool,
+        id: str
+    ) -> Tuple[Optional[Dict[str, Any]], Optional[Exception]]:
+        """Get account by ID
+        
+        Returns:
+            Tuple[Optional[Dict[str, Any]], Optional[Exception]]: A tuple containing:
+                - First element: Account data as dictionary if found, None if not found
+                - Second element: Exception if error occurred, None if successful
+        """
+        try:
+            query = """
+            SELECT id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
+            FROM account
+            WHERE id = $1 AND is_deleted = false
+            """
+            async with pool.acquire() as conn:
+                record = await conn.fetchrow(query, id)
+                return (dict(record) if record else None, None)
+        except Exception as e:
+            return None, e
