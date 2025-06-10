@@ -2,6 +2,7 @@ from fastapi import APIRouter
 import logging
 from api.router.user.user_router import user_router
 from api.router.account.account_router import account_router
+from api.router.auth.auth_router import auth_router
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,12 @@ class RouterInitializer:
                 prefix="/accounts",
                 tags=["accounts"]
             )
+            self.main_router.include_router(
+                auth_router,
+                prefix="/auth",
+                tags=["auth"]
+            )
+            
             
             logger.info("All routers initialized successfully")
             return self.main_router

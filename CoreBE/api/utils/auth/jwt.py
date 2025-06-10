@@ -1,8 +1,11 @@
 import jwt
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Tuple, Dict, Any
 from api.initialize.redis import RedisInitializer
 import logging
+import uuid
+import os
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +21,12 @@ class TokenClaims:
         self.iss = claims.get('iss')
         self.aud = claims.get('aud')
 
+class TokenResponse(BaseModel):
+    token: str
+    expires_at: datetime
+    token_type: str
+
 async def check_blacklist(token: str) -> bool:
-    """
-    Check if token is in blacklist
-    
-    Args:
-        token (str): Token to check
-        
-    Returns:
-        bool: True if token is blacklisted, False otherwise
-    """
     try:
         if not redis_init.client:
             await redis_init.initialize()
@@ -49,15 +48,6 @@ async def check_blacklist(token: str) -> bool:
         return False
 
 async def verify_token_subject(token: str) -> Tuple[Optional[TokenClaims], Optional[Exception]]:
-    """
-    Verify JWT token and return claims if valid
-    
-    Args:
-        token (str): JWT token to verify
-        
-    Returns:
-        Tuple[Optional[TokenClaims], Optional[Exception]]: Tuple containing claims and error if any
-    """
     try:
         # Check blacklist first
         if await check_blacklist(token):
@@ -84,16 +74,6 @@ async def verify_token_subject(token: str) -> Tuple[Optional[TokenClaims], Optio
         return None, e
 
 async def check_token_revoked(subtoken: str, issued_at: int) -> Tuple[bool, Optional[Exception]]:
-    """
-    Check if token is revoked due to password change
-    
-    Args:
-        subtoken (str): Subtoken to check
-        issued_at (int): Token issued timestamp
-        
-    Returns:
-        Tuple[bool, Optional[Exception]]: Tuple containing revocation status and error if any
-    """
     try:
         if not redis_init.client:
             await redis_init.initialize()
@@ -133,3 +113,70 @@ async def check_token_revoked(subtoken: str, issued_at: int) -> Tuple[bool, Opti
     except Exception as e:
         logger.error(f"Error checking token revocation: {e}")
         return False, e
+
+def create_token(uuid_token: str) -> str:
+    # 1. Set time expiration
+    time_ex = os.getenv("ACCESS_TOKEN", "72h")
+
+    # Parse duration string like "72h" into timedelta
+    try:
+        if time_ex.endswith("h"):
+            hours = int(time_ex[:-1])
+            expiration = timedelta(hours=hours)
+        else:
+            raise ValueError("Invalid time format")
+    except Exception as e:
+        raise e
+
+    now = datetime.utcnow()
+    expires_at = now + expiration
+
+    payload = {
+        "jti": str(uuid.uuid4()),
+        "exp": int(expires_at.timestamp()),
+        "iat": int(now.timestamp()),
+        "iss": "parkingdevgo",
+        "sub": uuid_token
+    }
+
+    # Replace with your actual secret key
+    secret_key = os.getenv("SECRET_KEY", "Thaco@1234")
+
+    token = jwt.encode(payload, secret_key, algorithm="HS256")
+    
+    return TokenResponse(
+        token=token,
+        expires_at=expires_at,
+        token_type="Bearer"
+    )
+
+def create_refresh_token(uuid_token: str) -> str:
+    # 1. Set time expiration
+    time_ex = os.getenv("REFRESH_TOKEN", "168h")
+
+    # Parse duration string like "168h" into timedelta
+    try:
+        if time_ex.endswith("h"):
+            hours = int(time_ex[:-1])
+            expiration = timedelta(hours=hours)
+        else:
+            raise ValueError("Invalid time format")
+    except Exception as e:
+        raise e
+
+    now = datetime.utcnow()
+    expires_at = now + expiration
+
+    payload = {
+        "jti": str(uuid.uuid4()),
+        "exp": int(expires_at.timestamp()),
+        "iat": int(now.timestamp()),
+        "iss": "parkingdevgo",
+        "sub": uuid_token
+    }
+
+    # Replace with your actual secret key
+    secret_key = os.getenv("SECRET_KEY", "Thaco@1234")
+
+    token = jwt.encode(payload, secret_key, algorithm="HS256")
+    return token
