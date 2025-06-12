@@ -23,9 +23,9 @@ class AccountQuery:
     ) -> Dict[str, Any]:
         """Create a new account in the database"""
         query = """
-        INSERT INTO account (id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at)
+        INSERT INTO account (id, number, code, name, email, username, password, salt, status, images, create_at, created_by, is_deleted, update_at)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-        RETURNING id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
+        RETURNING id, number, code, name, email, username, salt, status, images, create_at, created_by, is_deleted, update_at
         """
         async with pool.acquire() as conn:
             record = await conn.fetchrow(query, id, number, code, name, email, username, password,salt,status,images,created_at, created_by, is_deleted, updated_at)
@@ -53,7 +53,7 @@ class AccountQuery:
     ) -> Optional[Dict[str, Any]]:
         """Get account by username"""
         query = """
-        SELECT id, number, code, name, email, username, password, salt, status, images, created_at, created_by, is_deleted, updated_at
+        SELECT id, number, code, name, email, username, password, salt, status, images, create_at, created_by, is_deleted, update_at
         FROM account
         WHERE username = $1 AND is_deleted = false
         """
@@ -75,7 +75,7 @@ class AccountQuery:
         """
         try:
             query = """
-            SELECT id, number, code, name, email, username, salt, status, images, created_at, created_by, is_deleted, updated_at
+            SELECT id, number, code, name, email, username, salt, status, images, create_at, created_by, is_deleted, update_at
             FROM account
             WHERE id = $1 AND is_deleted = false
             """
