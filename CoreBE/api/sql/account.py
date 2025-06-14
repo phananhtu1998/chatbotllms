@@ -1,6 +1,8 @@
 import asyncpg
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
+from tenacity import retry, stop_after_attempt, wait_exponential
+import logging
 
 class AccountQuery:
     @staticmethod

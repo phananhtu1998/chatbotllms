@@ -28,7 +28,6 @@ class KeyTokenQuery:
         query = """
         UPDATE keytoken
         SET refresh_token = $1,
-            refresh_tokens_used = COALESCE(refresh_tokens_used, '[]'::jsonb) || to_jsonb($1::text),
             updated_at = CURRENT_TIMESTAMP
         WHERE account_id = $2
         """
