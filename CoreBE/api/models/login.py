@@ -32,3 +32,7 @@ class LoginOutput(BaseModel):
 
 class RefreshTokenInput(BaseModel):
 	refresh_token: str = Field(..., description="Refresh token to use for getting new tokens")
+
+class ChangePasswordInput(BaseModel):
+	old_password: str = Field(..., description="Current password of the user")
+	new_password: str = Field(..., description="New password for the user")

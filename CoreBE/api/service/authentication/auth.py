@@ -10,7 +10,7 @@ import uuid
 import json
 from api.global_config.global_val import global_instance
 from ...const.const import REFRESH_TOKEN
-from ...models.login import LoginInput, LoginOutput, RefreshTokenInput
+from ...models.login import LoginInput, LoginOutput, RefreshTokenInput, ChangePasswordInput
 from ...response.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
 import traceback
 from fastapi import Request
@@ -257,6 +257,95 @@ class AuthService:
             if isinstance(e, AppError):
                 return e.code, None, e
             # Capture traceback for more detailed logging
+            detailed_error = traceback.format_exc()
+            return 500, None, ErrorInternal(message=str(e), details={"traceback": detailed_error})
+        
+    async def change_password(self, request: Request, input_data: ChangePasswordInput) -> Tuple[int, LoginOutput, Optional[Exception]]:
+        try:
+            subject_uuid = request.state.subject_uuid
+            if not subject_uuid:
+                return 401, None, ErrorNotAuth("Subject UUID not found in context")
+
+            # Get user info from Redis cache (assuming it stores enough info for password change)
+            try:
+                user_info_str = await global_instance.redis_client.get(subject_uuid)
+                if not user_info_str:
+                    return 500, None, ErrorInternal("User info not found in cache")
+                user_info = json.loads(user_info_str)
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error getting user info from cache: {str(e)}")
+
+            # Get account details from DB
+            account_tuple = await AccountQuery.get_account_by_id(self.pool, user_info["id"])
+            if account_tuple is None or account_tuple[0] is None:
+                return 500, None, ErrorInternal("Failed to retrieve account information from DB")
+            account_data, err = account_tuple
+            if err:
+                return 500, None, ErrorInternal(f"Error getting account information from DB: {str(err)}")
+
+            # Verify old password
+            if not Crypto.matching_password(account_data["password"], input_data.old_password, account_data["salt"]):
+                return 401, None, ErrorNotAuth("Old password is incorrect")
+
+            # Generate new hashed password and salt
+            new_salt = Crypto.generate_salt()
+            new_hashed_password = Crypto.hash_password(input_data.new_password, new_salt)
+
+            # Update password in DB
+            success = await AccountQuery.change_password_by_id(self.pool, new_hashed_password, user_info["id"], new_salt)
+            if not success:
+                return 500, None, ErrorInternal("Failed to update password in database")
+
+            # Invalidate old tokens by setting a timestamp in Redis (TOKEN_IAT_AVAILABLE_ACCOUNT_ID)
+            invalidation_key = f"TOKEN_IAT_AVAILABLE_{user_info['id']}"
+            await global_instance.redis_client.set(invalidation_key, int(datetime.utcnow().timestamp()), ex=REFRESH_TOKEN * 3600)
+
+            # Generate new subtoken and update cache
+            subtoken = TokenGenerator.generate_cli_token_uuid(account_data["number"])
+            try:
+                # Convert UUID and datetime objects to strings for JSON serialization for new cache entry
+                for key, value in account_data.items():
+                    if isinstance(value, uuid.UUID):
+                        account_data[key] = str(value)
+                    elif isinstance(value, datetime):
+                        account_data[key] = value.isoformat()
+                account_info_json = json.dumps(account_data)
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error converting account info to JSON for cache: {str(e)}")
+
+            try:
+                await global_instance.redis_client.set(
+                    subtoken,
+                    account_info_json,
+                    ex=REFRESH_TOKEN * 3600  # Convert hours to seconds
+                )
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error setting Redis for new subtoken: {str(e)}")
+
+            # Create new tokens
+            access_token = create_token(subtoken)
+            new_refresh_token = create_refresh_token(subtoken)
+
+            # Update refresh token in database
+            success = await KeyTokenQuery.update_refresh_token(self.pool, user_info["id"], new_refresh_token)
+            if not success:
+                return 500, None, ErrorInternal("Failed to update refresh token in database")
+
+            # Prepare output
+            output = LoginOutput(
+                id=str(account_data["id"]),
+                username=account_data["username"],
+                email=account_data["email"],
+                image=account_data["images"],
+                accesstoken=access_token.token,
+                refreshToken=new_refresh_token,
+            )
+
+            return 200, output, None
+
+        except Exception as e:
+            if isinstance(e, AppError):
+                return e.code, None, e
             detailed_error = traceback.format_exc()
             return 500, None, ErrorInternal(message=str(e), details={"traceback": detailed_error})
         

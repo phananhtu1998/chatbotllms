@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from typing import Tuple, Dict, Any, Optional
-from ...models.login import LoginInput, LoginOutput
+from ...models.login import LoginInput, LoginOutput, ChangePasswordInput
 from ...service.authentication.auth import AuthService
 from ...response.errors import ErrorNotAuth, ErrorForbidden, AppError
 from api.utils.response import create_response
@@ -98,6 +98,39 @@ class AuthController:
             return create_response(
                 status_code=status.HTTP_200_OK,
                 message="Tokens refreshed successfully",
+                data=response
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+
+    async def change_password(
+        self,
+        request: Request,
+        input_data: ChangePasswordInput = Body(..., description="Change password data")
+    ) -> Dict[str, Any]:
+        """Change user's password"""
+        try:
+            status_code, response, error = await self.auth_service.change_password(request, input_data)
+
+            if error is not None:
+                if isinstance(error, ErrorNotAuth):
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error))
+                elif isinstance(error, ErrorForbidden):
+                    raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error))
+                else:
+                    detail_message = str(error)
+                    if hasattr(error, 'details') and error.details:
+                        detail_message = {"message": str(error), "details": error.details}
+                    raise HTTPException(status_code=error.code if isinstance(error, AppError) else status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail_message)
+
+            return create_response(
+                status_code=status.HTTP_200_OK,
+                message="Password changed successfully",
                 data=response
             )
         except HTTPException:

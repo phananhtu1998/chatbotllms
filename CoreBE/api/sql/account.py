@@ -77,7 +77,7 @@ class AccountQuery:
         """
         try:
             query = """
-            SELECT id, number, code, name, email, username, salt, status, images, create_at, created_by, is_deleted, update_at
+            SELECT id, number, code, name, email, username, password, salt, status, images, create_at, created_by, is_deleted, update_at
             FROM account
             WHERE id = $1 AND is_deleted = false
             """
@@ -86,3 +86,26 @@ class AccountQuery:
                 return (dict(record) if record else None, None)
         except Exception as e:
             return None, e
+
+    @staticmethod
+    async def change_password_by_id(
+        pool: asyncpg.Pool,
+        password: str,
+        account_id: str,
+        salt: str
+    ) -> bool:
+        """Update account password by ID"""
+        query = """
+        UPDATE account
+        SET password = $1,
+            salt = $3,
+            update_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        """
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(query, password, account_id, salt)
+                return True
+        except Exception as e:
+            print(f"DEBUG: Error changing password: {str(e)}")
+            return False

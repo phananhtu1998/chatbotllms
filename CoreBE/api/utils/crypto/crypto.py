@@ -9,6 +9,11 @@ load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
 class Crypto:
     @staticmethod
+    def generate_salt(length: int = 16) -> str:
+        """Generate a random salt."""
+        return os.urandom(length).hex()
+
+    @staticmethod
     def hash_password(password: str, salt: str) -> str:
         # Combine password, salt and secret key
         salted_password = f"{password}{salt}{SECRET_KEY}"

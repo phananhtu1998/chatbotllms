@@ -4,7 +4,7 @@ from typing import Optional, List, Dict, Any
 from api.middleware.auth import AuthMiddleware
 from api.service.authentication.auth import AuthService
 from api.initialize.postgres import PostgresInitializer
-from api.models.login import LoginInput
+from api.models.login import LoginInput, LoginOutput, ChangePasswordInput
 from ...controller.auth.auth import AuthController
 
 # Create router
@@ -51,5 +51,17 @@ async def refresh_tokens(
     return await auth_controller.refresh_tokens(
         request=request,
         refresh_token=refresh_token
+    )
+
+@auth_router.post("/change-password", dependencies=[Depends(auth.get_bearer_token)])
+async def change_password(
+    request: Request,
+    input_data: ChangePasswordInput = Body(..., description="Change password data"),
+    auth_controller: AuthController = Depends(get_auth_controller),
+) -> Dict[str, Any]:
+    """Change user's password"""
+    return await auth_controller.change_password(
+        request=request,
+        input_data=input_data
     )
 
