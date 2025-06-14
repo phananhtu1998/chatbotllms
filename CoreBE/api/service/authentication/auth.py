@@ -94,9 +94,10 @@ class AuthService:
             output = LoginOutput(
                 id=str(item_account["id"]),
                 username=item_account["username"],
+                email = item_account["email"],
+                image = item_account["images"],
                 accesstoken=access_token.token,
                 refreshToken=refresh_token,
-                x_api_key=item_account.get("api_key", "")
             )
 
             return 200, output, None

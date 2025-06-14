@@ -25,5 +25,7 @@ class LoginInput(BaseModel):
 class LoginOutput(BaseModel):
 	id: str
 	username: str
+	email: str
+	image: str
 	accesstoken: str
 	refresh_token: str = Field(alias="refreshToken")
