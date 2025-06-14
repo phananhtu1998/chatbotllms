@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from typing import Tuple, Dict, Any
 from ...models.login import LoginInput, LoginOutput
 from ...service.authentication.auth import AuthService
-from ...errors.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, AppError
+from ...response.errors import ErrorNotAuth, ErrorForbidden, AppError
 from api.utils.response import create_response
 
 class AuthController:

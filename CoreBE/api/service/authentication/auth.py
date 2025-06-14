@@ -11,7 +11,7 @@ import json
 from api.global_config.global_val import global_instance
 from ...const.const import REFRESH_TOKEN
 from ...models.login import LoginInput, LoginOutput
-from ...errors.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
+from ...response.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
 import traceback
 
 
