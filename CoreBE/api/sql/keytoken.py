@@ -76,4 +76,22 @@ class KeyTokenQuery:
         except Exception as e:
             print(f"DEBUG: Error inserting key token: {str(e)}")
             return False
+
+    @staticmethod
+    async def delete_key(
+        pool: asyncpg.Pool,
+        account_id: str
+    ) -> bool:
+        query = """
+        DELETE FROM keytoken
+        WHERE account_id = $1
+        """
+        
+        try:
+            async with pool.acquire() as conn:
+                await conn.execute(query, account_id)
+                return True
+        except Exception as e:
+            print(f"DEBUG: Error deleting key token: {str(e)}")
+            return False
     

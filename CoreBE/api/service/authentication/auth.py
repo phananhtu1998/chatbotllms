@@ -13,6 +13,7 @@ from ...const.const import REFRESH_TOKEN
 from ...models.login import LoginInput, LoginOutput
 from ...response.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
 import traceback
+from fastapi import Request
 
 
 class AuthService:
@@ -108,3 +109,45 @@ class AuthService:
             # Capture traceback for more detailed logging
             detailed_error = traceback.format_exc()
             return 500, None, ErrorInternal(message=str(e), details={"traceback": detailed_error})
+        
+    async def logout(self, request: Request) -> Tuple[int, Optional[Dict[str, Any]], Optional[Exception]]:
+        try:
+            # Get subject_uuid from context
+            subject_uuid = request.state.subject_uuid
+            if not subject_uuid:
+                return 401, None, ErrorNotAuth("Subject UUID not found in context")
+
+            # Get user info from Redis cache
+            try:
+                user_info = await global_instance.redis_client.get(subject_uuid)
+                if not user_info:
+                    return 500, None, ErrorInternal("User info not found in cache")
+                
+                user_data = json.loads(user_info)
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error getting user info from cache: {str(e)}")
+
+            # Add token to blacklist in Redis
+            if not global_instance.redis_client:
+                return 500, None, ErrorInternal("Redis client not initialized")
+            
+            # Create Redis key for blacklist
+            redis_key = f"TOKEN_BLACK_LIST_{subject_uuid}"
+            
+            # Set token in blacklist with expiration
+            await global_instance.redis_client.set(redis_key, "1", ex=REFRESH_TOKEN * 3600)  # Convert hours to seconds
+            
+            # Delete user's refresh token from database
+            try:
+                success = await KeyTokenQuery.delete_key(self.pool, user_data["id"])
+                if not success:
+                    return 500, None, ErrorInternal("Failed to delete refresh token")
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error deleting refresh token: {str(e)}")
+            
+            return 200, {"message": "Successfully logged out"}, None
+            
+        except Exception as e:
+            return 500, None, ErrorInternal(f"Error during logout: {str(e)}")
+        
+        

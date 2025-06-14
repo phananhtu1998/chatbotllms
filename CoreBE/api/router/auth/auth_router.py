@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
 from api.middleware.auth import AuthMiddleware
@@ -13,11 +13,12 @@ auth_router = APIRouter()
 # Create auth middleware instance
 auth = AuthMiddleware()
 
-# Dependency to get authController instance
-async def get_auth_controller():
+async def get_auth_service():
     postgres = PostgresInitializer()
     pool = await postgres.initialize()
-    auth_service = AuthService(pool)
+    return AuthService(pool)
+
+async def get_auth_controller(auth_service: AuthService = Depends(get_auth_service)):
     return AuthController(auth_service)
 
 @auth_router.post("/login", status_code=status.HTTP_200_OK)
@@ -28,5 +29,15 @@ async def login(
     """Authenticate user and return tokens"""
     return await auth_controller.login(
         login_data=login_data
+    )
+
+@auth_router.post("/logout", dependencies=[Depends(auth.get_bearer_token)])
+async def logout(
+    request: Request,
+    auth_controller: AuthController = Depends(get_auth_controller),
+) -> Dict[str, Any]:
+    """Logout user and blacklist their token"""
+    return await auth_controller.logout(
+        request=request
     )
 

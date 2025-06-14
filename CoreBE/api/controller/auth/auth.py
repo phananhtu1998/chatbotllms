@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
-from typing import Tuple, Dict, Any
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
+from typing import Tuple, Dict, Any, Optional
 from ...models.login import LoginInput, LoginOutput
 from ...service.authentication.auth import AuthService
 from ...response.errors import ErrorNotAuth, ErrorForbidden, AppError
@@ -43,6 +43,31 @@ class AuthController:
             )
         except HTTPException:
             raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
+
+    async def logout(
+        self,
+        request: Request
+    ) -> Dict[str, Any]:
+        """Logout user and invalidate token"""
+        try:
+            status_code, response, error = await self.auth_service.logout(request)
+
+            if error is not None:
+                raise HTTPException(
+                    status_code=status_code,
+                    detail=str(error)
+                )
+            return create_response(
+                status_code=status.HTTP_200_OK,
+                message="Logout successful",
+                data=response
+            )
+
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
