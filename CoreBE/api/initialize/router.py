@@ -16,17 +16,17 @@ class RouterInitializer:
             self.main_router.include_router(
                 user_router,
                 prefix="/users",
-                tags=["users"]
+                tags=["Users"]
             )
             self.main_router.include_router(
                 account_router,
                 prefix="/accounts",
-                tags=["accounts"]
+                tags=["Accounts"]
             )
             self.main_router.include_router(
                 auth_router,
                 prefix="/auth",
-                tags=["auth"]
+                tags=["Authenticate"]
             )
             
             
