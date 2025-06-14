@@ -10,7 +10,7 @@ import uuid
 import json
 from api.global_config.global_val import global_instance
 from ...const.const import REFRESH_TOKEN
-from ...models.login import LoginInput, LoginOutput
+from ...models.login import LoginInput, LoginOutput, RefreshTokenInput
 from ...response.errors import ErrorNotAuth, ErrorForbidden, ErrorInternal, ErrorBadRequest, AppError
 import traceback
 from fastapi import Request
@@ -78,7 +78,7 @@ class AuthService:
                 
             if KeyToken > 0:
                 try:
-                    success = await KeyTokenQuery.update_refresh_token_and_used_tokens(self.pool, item_account["id"], refresh_token)
+                    success = await KeyTokenQuery.update_refresh_token(self.pool, item_account["id"], refresh_token)
                     if not success:
                         return 500, None, ErrorInternal("Failed to update refresh token")
                 except Exception as e:
@@ -149,5 +149,115 @@ class AuthService:
             
         except Exception as e:
             return 500, None, ErrorInternal(f"Error during logout: {str(e)}")
+        
+    async def refresh_tokens(self, request: Request, refresh_token: str) -> Tuple[int, Optional[LoginOutput], Optional[Exception]]:
+        try:
+            # Get refresh token from input
+            if not refresh_token:
+                return 401, None, ErrorNotAuth("Refresh token not provided")
+
+            # Check if refresh token exists in database
+            count_refresh_token = await KeyTokenQuery.count_refresh_token_by_account(self.pool, refresh_token)
+            if count_refresh_token == 0:
+                return 401, None, ErrorNotAuth("Account not registered or logged in elsewhere. Please login again.")
+
+            # Get subject UUID from context
+            subject_uuid = request.state.subject_uuid
+            if not subject_uuid:
+                return 401, None, ErrorNotAuth("Subject UUID not found in context")
+
+            # Get user info from Redis cache
+            try:
+                user_info = await global_instance.redis_client.get(subject_uuid)
+                if not user_info:
+                    return 500, None, ErrorInternal("User info not found in cache")
+                
+                user_data = json.loads(user_info)
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error getting user info from cache: {str(e)}")
+
+            # Check if refresh token has been used
+            used_token_count = await KeyTokenQuery.count_by_token_and_account(
+                self.pool,
+                user_data["id"],
+                refresh_token
+            )
+            if used_token_count > 0:
+                # Delete key if token has been used
+                await KeyTokenQuery.delete_key(self.pool, user_data["id"])
+                return 401, None, ErrorNotAuth("Refresh token has been used")
+
+            # Get account info
+            account_info = await AccountQuery.get_account_by_username(self.pool, user_data["username"])
+            if not account_info:
+                return 404, None, ErrorInternal("Account not found")
+
+            # Generate new subtoken
+            subtoken = TokenGenerator.generate_cli_token_uuid(account_info["number"])
+
+            # Get full account info
+            result_tuple = await AccountQuery.get_account_by_id(self.pool, account_info["id"])
+            if result_tuple is None:
+                return 500, None, ErrorInternal("Failed to retrieve account information")
+
+            info_account, err = result_tuple
+            if err is not None:
+                return 500, None, ErrorInternal("Error getting account information")
+
+            try:
+                # Convert UUID and datetime objects to strings for JSON serialization
+                for key, value in info_account.items():
+                    if isinstance(value, uuid.UUID):
+                        info_account[key] = str(value)
+                    elif isinstance(value, datetime):
+                        info_account[key] = value.isoformat()
+                info_account_json = json.dumps(info_account)
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error converting account info to JSON: {str(e)}")
+
+            # Update Redis cache
+            try:
+                await global_instance.redis_client.set(
+                    subtoken,
+                    info_account_json,
+                    ex=REFRESH_TOKEN * 3600  # Convert hours to seconds
+                )
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error setting Redis: {str(e)}")
+
+            # Create new tokens
+            access_token = create_token(subtoken)
+            new_refresh_token = create_refresh_token(subtoken)
+
+            # Update refresh token in database
+            try:
+                success = await KeyTokenQuery.update_refresh_token_and_used_tokens(
+                    self.pool,
+                    account_info["id"],
+                    new_refresh_token
+                )
+                if not success:
+                    return 500, None, ErrorInternal("Failed to update refresh token")
+            except Exception as e:
+                return 500, None, ErrorInternal(f"Error updating refresh token: {str(e)}")
+
+            # Prepare output
+            output = LoginOutput(
+                id=str(account_info["id"]),
+                username=account_info["username"],
+                email=account_info["email"],
+                image=account_info["images"],
+                accesstoken=access_token.token,
+                refreshToken=new_refresh_token,
+            )
+
+            return 200, output, None
+
+        except Exception as e:
+            if isinstance(e, AppError):
+                return e.code, None, e
+            # Capture traceback for more detailed logging
+            detailed_error = traceback.format_exc()
+            return 500, None, ErrorInternal(message=str(e), details={"traceback": detailed_error})
         
         

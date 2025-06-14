@@ -29,3 +29,6 @@ class LoginOutput(BaseModel):
 	image: str
 	accesstoken: str
 	refresh_token: str = Field(alias="refreshToken")
+
+class RefreshTokenInput(BaseModel):
+	refresh_token: str = Field(..., description="Refresh token to use for getting new tokens")

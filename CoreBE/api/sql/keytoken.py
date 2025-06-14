@@ -2,6 +2,7 @@ import asyncpg
 from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime
 import uuid
+import json
 
 class KeyTokenQuery:
     @staticmethod
@@ -20,7 +21,7 @@ class KeyTokenQuery:
             return count if count is not None else 0
         
     @staticmethod
-    async def update_refresh_token_and_used_tokens(
+    async def update_refresh_token(
         pool: asyncpg.Pool,
         account_id: str,
         refresh_token: str
@@ -93,5 +94,77 @@ class KeyTokenQuery:
                 return True
         except Exception as e:
             print(f"DEBUG: Error deleting key token: {str(e)}")
+            return False
+
+    @staticmethod
+    async def count_refresh_token_by_account(
+        pool: asyncpg.Pool,
+        refresh_token: str
+    ) -> int:
+        query = """
+        SELECT COUNT(*) AS total_count 
+        FROM keytoken 
+        WHERE refresh_token = $1
+        """
+        
+        async with pool.acquire() as conn:
+            count = await conn.fetchval(query, refresh_token)
+            return count if count is not None else 0
+
+    @staticmethod
+    async def count_by_token_and_account(
+        pool: asyncpg.Pool,
+        account_id: str,
+        refresh_token: str
+    ) -> int:
+        query = """
+        SELECT COUNT(*) AS total_count 
+        FROM keytoken 
+        WHERE account_id = $1 
+        AND refresh_tokens_used::jsonb @> $2::jsonb
+        """
+        
+        try:
+            async with pool.acquire() as conn:
+                count = await conn.fetchval(query, account_id, json.dumps([refresh_token]))
+                return count if count is not None else 0
+        except Exception as e:
+            print(f"DEBUG: Error counting by token and account: {str(e)}")
+            return 0
+
+    @staticmethod
+    async def update_refresh_token_and_used_tokens(
+        pool: asyncpg.Pool,
+        account_id: str,
+        refresh_token: str
+    ) -> bool:
+        query = """
+        UPDATE keytoken
+        SET refresh_token = $1,
+            refresh_tokens_used = refresh_tokens_used || $2::jsonb,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE account_id = $3
+        """
+        
+        try:
+            async with pool.acquire() as conn:
+                # Get current refresh token before updating
+                current_token_query = """
+                SELECT refresh_token 
+                FROM keytoken 
+                WHERE account_id = $1
+                """
+                current_token = await conn.fetchval(current_token_query, account_id)
+                
+                if current_token:
+                    # Add current token to used tokens list
+                    used_tokens = json.dumps([current_token])
+                    await conn.execute(query, refresh_token, used_tokens, account_id)
+                else:
+                    # If no current token, just update the refresh token
+                    await conn.execute(query, refresh_token, json.dumps([]), account_id)
+                return True
+        except Exception as e:
+            print(f"DEBUG: Error updating refresh token and used tokens: {str(e)}")
             return False
     

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Request, Header
 from fastapi.security import HTTPAuthorizationCredentials
 from typing import Optional, List, Dict, Any
 from api.middleware.auth import AuthMiddleware
@@ -39,5 +39,17 @@ async def logout(
     """Logout user and blacklist their token"""
     return await auth_controller.logout(
         request=request
+    )
+
+@auth_router.post("/refresh", dependencies=[Depends(auth.get_bearer_token)])
+async def refresh_tokens(
+    request: Request,
+    refresh_token: str = Header(..., alias="Refresh-Token", description="Refresh token to get new access token"),
+    auth_controller: AuthController = Depends(get_auth_controller),
+) -> Dict[str, Any]:
+    """Refresh access and refresh tokens"""
+    return await auth_controller.refresh_tokens(
+        request=request,
+        refresh_token=refresh_token
     )
 
