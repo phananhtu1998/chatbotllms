@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 import logging
-from api.router.user.user_router import user_router
 from api.router.account.account_router import account_router
 from api.router.auth.auth_router import auth_router
 
@@ -13,11 +12,6 @@ class RouterInitializer:
     def initialize(self):
         """Initialize all API routers"""
         try: 
-            self.main_router.include_router(
-                user_router,
-                prefix="/users",
-                tags=["Users"]
-            )
             self.main_router.include_router(
                 account_router,
                 prefix="/accounts",
